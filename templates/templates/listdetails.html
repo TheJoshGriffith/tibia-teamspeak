@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+
+{% block content %}
+<ul class="list-group list-group-flush">
+    <li class="list-group-item"><b>{{ title }}</b></li>
+    {% for character in list %}
+    <li class="list-group-item">{{ character }}</li>
+    {% endfor %}
+</ul>
+{% endblock %}}

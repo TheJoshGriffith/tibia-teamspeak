@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    {% for list in lists %}
+    <div id="col-md-6">
+        <h1>{{ list }}</h1>
+
+        <ul class="list-group list-group-flush">
+            {% for character in lists[list] %}
+            <li class="list-group-item d-flex justify-content-between align-items-center">{{ character }}
+                <span class="badge badge-pill"><a href="removecharacter?list={{list.lower()}}&character={{character}}"><img src="https://cdnjs.cloudflare.com/ajax/libs/octicons/4.4.0/svg/circle-slash.svg"></a></span>
+            </li>
+            {% endfor %}
+        </ul>
+        <form class="form-inline" method="post" action="/addcharacter">
+            <input type="hidden" name="list_name" value="{{ list }}">
+            <input type="text" class="form-control mb-2 mr-sm-2" name="character_name" placeholder="Dash Hyo">
+            <button type="submit" class="btn btn-primary mb-2">Add</button>
+        </form>
+    </div>
+    {% endfor %}
+</div>
+
+{% endblock %}}

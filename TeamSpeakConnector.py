@@ -110,9 +110,11 @@ class TeamSpeakConnector:
                             err = self.dbc.claim_respawn(str(match[1:]).upper(), teamspeak_client["clid"])
                             if err:
                                 self.log.error(err)
-        for claimed_respawn in self.dbc.get_claims():
-            if not str(claimed_respawn[2]) in self.get_client_name(claimed_respawn[4]).upper():
-                self.dbc.unclaim_respawn(claimed_respawn[2])
+        claims = self.dbc.get_claims()
+        if len(claims) != 0:
+            for claimed_respawn in claims:
+                if not str(claimed_respawn[2]) in self.get_client_name(claimed_respawn[4]).upper():
+                    self.dbc.unclaim_respawn(claimed_respawn[2])
 
     def get_client_name(self, client_id):
         self.tss.q.put(lambda: self.tss.ts3conn.clientlist())

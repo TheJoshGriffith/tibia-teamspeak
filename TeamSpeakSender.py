@@ -20,6 +20,8 @@ class TeamSpeakSender(threading.Thread):
         self.log_handler.setFormatter(self.log_formatter)
         self.log.addHandler(self.log_handler)
         config = ConfigParser()
+        self.config = config
+        self.nickname = nickname
         config.read('config.ini')
         self.ts3conn = ts3.query.TS3Connection(config.get('serverinfo', 'TEAMSPEAK_IP'), config.get('serverinfo', 'TEAMSPEAK_PORT'))
         self.ts3conn.login(client_login_name=config.get('serverinfo', 'TEAMSPEAK_CLIENT_SEND'), client_login_password=config.get('serverinfo', 'TEAMSPEAK_PASSWD_SEND'))
@@ -27,7 +29,7 @@ class TeamSpeakSender(threading.Thread):
         self.ts3conn.send("clientupdate client_nickname=" + nickname)
         self.q = queue.Queue()
         self.q_output = queue.Queue()
-        self.events_per_second = 25
+        self.events_per_second = 10
 
     def run(self):
         while True:
@@ -38,6 +40,13 @@ class TeamSpeakSender(threading.Thread):
                 time.sleep(1/self.events_per_second)
             except queue.Empty:
                 self.ts3conn.send_keepalive()
-            except:
-                self.log.error("Error processing queue item")
+            except Exception as e:
+                self.log.error("Error processing queue item: %s" % e)
                 print("Error processing queue item at: " + str(datetime.datetime.now()))
+                time.sleep(5*60)
+                self.ts3conn = ts3.query.TS3Connection(self.config.get('serverinfo', 'TEAMSPEAK_IP'),
+                                                       self.config.get('serverinfo', 'TEAMSPEAK_PORT'))
+                self.ts3conn.login(client_login_name=self.config.get('serverinfo', 'TEAMSPEAK_CLIENT_SEND'),
+                                   client_login_password=self.config.get('serverinfo', 'TEAMSPEAK_PASSWD_SEND'))
+                self.ts3conn.use(sid=str(self.config.get('serverinfo', 'TEAMSPEAK_SID')))
+                self.ts3conn.send("clientupdate client_nickname=" + self.nickname)
