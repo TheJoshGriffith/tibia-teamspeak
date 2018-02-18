@@ -9,6 +9,9 @@ You'll need a few pre-requesites to make this work, namely:
 * ts3
 * configparser
 * bs4
+* requests
+* jinja2
+* cherrypy
 
 Once these are installed, simply copy `config.ini.sample` to `config.ini`, and enter your server
 credentials. You will need to create 2 ServerQuery login accounts, preferably using separate
