@@ -37,3 +37,4 @@ class HelloWorld(object):
     @cherrypy.expose
     def masspoke(self, message):
         self.tsc.masspoke(message)
+        raise cherrypy.HTTPRedirect('/')
