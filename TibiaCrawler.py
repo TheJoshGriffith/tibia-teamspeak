@@ -43,7 +43,13 @@ class TibiaCrawler(threading.Thread):
         return False
 
     def update_online_characters_tibiadata(self):
-        online_list = self.get_online_characters_tibiadata()["world"]["players_online"]
+        try:
+            online_list = self.get_online_characters_tibiadata()["world"]["players_online"]
+        except KeyError as e:
+            online_list = []
+            print("Key error getting online list, assuming server save: %s" % e)
+
+
         for character in online_list:
             if self.dbc.user_exists_by_name(character["name"]):
                 if not self.dbc.character_online(character["name"]):
