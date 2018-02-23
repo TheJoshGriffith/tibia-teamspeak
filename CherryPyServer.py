@@ -3,10 +3,11 @@ from jinja2 import Environment, PackageLoader, select_autoescape
 
 
 class HelloWorld(object):
-    def __init__(self):
+    def __init__(self, tsc):
         super().__init__()
         self.dbc = DatabaseConnector.DatabaseConnector()
         self.env = Environment(loader=PackageLoader("templates"), autoescape=select_autoescape(['html', 'xml']))
+        self.tsc = tsc
 
     def get_characters(self, list):
         characters = []
@@ -32,3 +33,7 @@ class HelloWorld(object):
     def addcharacter(self, list_name, character_name):
         self.dbc.add_character_to_list(character_name, list_name.lower())
         raise cherrypy.HTTPRedirect('/')
+
+    @cherrypy.expose
+    def masspoke(self, message):
+        self.tsc.masspoke(message)

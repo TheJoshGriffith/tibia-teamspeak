@@ -1,4 +1,4 @@
-import threading, datetime, time, DatabaseConnector
+import threading, datetime, time, DatabaseConnector, logging
 
 
 class TeamSpeakChannelUpdater(threading.Thread):
@@ -6,6 +6,12 @@ class TeamSpeakChannelUpdater(threading.Thread):
         threading.Thread.__init__(self)
         self.connector = connector
         self.dbc = DatabaseConnector.DatabaseConnector()
+        self.log = logging.getLogger("TeamSpeakChannelUpdater")
+        self.log.setLevel(logging.DEBUG)
+        self.log_handler = logging.FileHandler("TeamSpeakChannelUpdater.log")
+        self.log_formatter = logging.Formatter("%(asctime)s %(levelname)s %(message)s")
+        self.log_handler.setFormatter(self.log_formatter)
+        self.log.addHandler(self.log_handler)
 
     def update_list(self, list, cid):
         new_desc = ""
@@ -25,6 +31,7 @@ class TeamSpeakChannelUpdater(threading.Thread):
                 time_since_string = '{:02}'.format(hours) + ":" + '{:02}'.format(minutes)
                 new_desc += '[size=7][b][' + time_since_string + '][/b][/size] ' + '[img]https://tibiapf.com/' + online_character[3] + '.png[/img]  '  + str(online_character[2]) + ' ' + online_character[1] + ' ' + '\n'
                 count += 1
+        self.log.debug("Added %s characters to %s" % (count, list))
         header = "[b]" + list.title() + "List[/b] - " + str(count) + " out of " + str(self.dbc.count_list_memberships(list)) + " online\n[i]List name: !" + list + "[/i]\n\n"
         footer = "[i]" + "Last updated: " + datetime.datetime.now().strftime("%Y-%m-%d %H:%M %Z") + "[/i]"
         desc_to_set = header + new_desc + footer

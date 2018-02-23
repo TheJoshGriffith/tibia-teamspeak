@@ -77,7 +77,6 @@ class TeamSpeakConnector:
         self.tss.q.put(lambda: self.tss.ts3conn.channelinfo(cid=channel_id))
         res = self.tss.q_output.get()
         self.log.debug(res[0])
-        self.log.debug("Test")
         return res[0]["channel_name"]
 
     def set_channel_name(self, channel_id, new_name):
