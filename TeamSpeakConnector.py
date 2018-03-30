@@ -106,13 +106,13 @@ class TeamSpeakConnector:
                     matches = re.findall("#[a-zA-Z]{1,2}[0-9]{1,2}", teamspeak_client["client_nickname"])
                     for match in matches:
                         if not self.dbc.is_claimed(str(match[1:])):
-                            err = self.dbc.claim_respawn(str(match[1:]).upper(), teamspeak_client["clid"])
+                            err = self.dbc.claim_respawn(str(match[1:]).upper(), teamspeak_client["client_nickname"])
                             if err:
                                 self.log.error(err)
         claims = self.dbc.get_claims()
         if len(claims) != 0:
             for claimed_respawn in claims:
-                if not str(claimed_respawn[2]) in self.get_client_name(claimed_respawn[4]).upper():
+                if not self.client_exists_with_name(str(claimed_respawn[4])):
                     self.dbc.unclaim_respawn(claimed_respawn[2])
 
     def get_client_name(self, client_id):
@@ -120,6 +120,14 @@ class TeamSpeakConnector:
         res = self.tss.q_output.get()
         for teamspeak_client in res:
             if teamspeak_client["clid"] == client_id:
+                return teamspeak_client["client_nickname"]
+        return ""
+
+    def client_exists_with_name(self, name):
+        self.tss.q.put(lambda: self.tss.ts3conn.clientlist())
+        res = self.tss.q_output.get()
+        for teamspeak_client in res:
+            if teamspeak_client["client_nickname"] == name:
                 return teamspeak_client["client_nickname"]
         return ""
 
