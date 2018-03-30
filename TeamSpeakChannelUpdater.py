@@ -58,12 +58,18 @@ class TeamSpeakChannelUpdater(threading.Thread):
                 hours = int(minutes/60)
                 minutes = int(minutes%60)
                 time_since_string = '{:02}'.format(hours) + ":" + '{:02}'.format(minutes)
-                desc_to_set += '[size=7][b][' + time_since_string + "][/b][/size] - " + spawn[2] + " - " + spawn[3] + " - " + self.connector.get_client_description(spawn[4]) + "\n"
+                try:
+                    desc_to_set += '[size=7][b][' + time_since_string + "][/b][/size] - " + spawn[2] + " - " + spawn[3] + " - " + str(spawn[4]) + "\n"
+                except ts3.TS3Error as e:
+                    print("Error appending respawn to claim system with respawn %s and error %s" % (spawn[2], e,))
             self.connector.set_channel_description(respawn_claim_channel, desc_to_set)
 
     def run(self):
         while(True):
             self.connector.update_claims()
+            respawn_claim_channel = self.dbc.get_setting("respawnclaim")[0][2]
+            self.connector.set_channel_description(respawn_claim_channel, "Now")
+            time.sleep(3)
             for list in self.dbc.get_lists():
                 self.update_list(list[1], list[2])
             self.update_respawn_system()
