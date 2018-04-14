@@ -21,7 +21,10 @@ class HelloWorld(object):
         for list in self.dbc.get_lists():
             lists[list[1].title()] = self.get_characters(list[1])
             #lists.append(list[1])
-        return self.env.get_template("index.html").render(lists=lists)
+        list_states = {}
+        for list in self.dbc.get_lists():
+            list_states[list[1].title()] = self.dbc.is_list_notifications(list[1])
+        return self.env.get_template("index.html").render(lists=lists, list_states=list_states)
         return ','.join(lists)
 
     @cherrypy.expose
@@ -37,4 +40,10 @@ class HelloWorld(object):
     @cherrypy.expose
     def masspoke(self, message):
         self.tsc.masspoke(message)
+        raise cherrypy.HTTPRedirect('/')
+
+    @cherrypy.expose
+    def notifications(self, list, state):
+        self.dbc.set_list_notifications(list.lower(), 1 if state == "True" else 0)
+        print("Setting %s to %s" % (list, str(1 if state == "True" else 0)))
         raise cherrypy.HTTPRedirect('/')

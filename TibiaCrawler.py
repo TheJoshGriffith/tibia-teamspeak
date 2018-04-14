@@ -1,19 +1,19 @@
-from urllib.request import urlopen
-import urllib.error
 import time, threading
-from bs4 import BeautifulSoup
 import DatabaseConnector
 import requests
 import json
+from configparser import ConfigParser
 
 class TibiaCrawler(threading.Thread):
 
-    def __init__(self, server_name, delay_seconds=10):
+    def __init__(self, delay_seconds=10):
         threading.Thread.__init__(self)
-        self.tibiaServer = "https://secure.tibia.com/community/?subtopic=worlds&world=" + server_name
         self.delaySeconds = delay_seconds
         self.dbc = DatabaseConnector.DatabaseConnector()
-        self.world = "Olympa"
+        config = ConfigParser()
+        config.read('config.ini')
+        self.world = config.get('settings', 'GAME_SERVER')
+        self.tibiaServer = "https://secure.tibia.com/community/?subtopic=worlds&world=" + self.world
 
     def shorten_vocation(self, long):
         return {
@@ -62,6 +62,13 @@ class TibiaCrawler(threading.Thread):
                 None
             else:
                 self.dbc.update_user_offline_by_name(db_online_character[1])
+
+    def get_character(self, name):
+        url = ''.join(["https://api.tibiadata.com/v2/character/", name, ".json"])
+        res = requests.get(url)
+        while res.status_code != 200:
+            res = requests.get(url)
+        return res.content.decode('utf-8')
 
     def run(self):
         while True:

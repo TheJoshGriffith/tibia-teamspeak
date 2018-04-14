@@ -13,5 +13,12 @@
                 </span>
             </form>
         </div>
+    <ul class="navbar-nav mr-auto">
+        {% for list, state in list_states.items() %}
+            <li class="nav-item active">
+                <a class="nav-link" href="notifications/{{ list }}/{% if state == True %}False{% else %}True{% endif %}">{{ list }} Notifications {% if state == True %}Enabled{% else %}Disabled{% endif %} <span class="sr-only">(current)</span></a>
+            </li>
+        {% endfor %}
+    </ul>
     </div>
 </nav>
