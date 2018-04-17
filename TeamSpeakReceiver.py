@@ -196,3 +196,6 @@ class TeamSpeakReceiver(threading.Thread):
                         elif method == "remove":
                             self.dbc.remove_character_from_list(character, list[1])
                             self.connector.message_client(self.connector.get_user_id_from_unique_id(invokeruid), "Removed user from list")
+                        elif method == "guild":
+                            self.dbc.set_list_guild(list[1], character)
+                            self.connector.message_client(self.connector.get_user_id_from_unique_id(invokeruid), "Set guild list")

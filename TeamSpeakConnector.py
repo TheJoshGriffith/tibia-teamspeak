@@ -4,13 +4,13 @@ import TeamSpeakReceiver, TeamSpeakSender, TeamSpeakChannelUpdater, DatabaseConn
 class TeamSpeakConnector:
 
     def __init__(self):
+        self.dbc = DatabaseConnector.DatabaseConnector()
         self.tss = TeamSpeakSender.TeamSpeakSender("Updater")
         self.tss.start()
         self.tsr = TeamSpeakReceiver.TeamSpeakReceiver("TibiaTS3", self)
         self.tsr.start()
         self.tscu = TeamSpeakChannelUpdater.TeamSpeakChannelUpdater(self)
         self.tscu.start()
-        self.dbc = DatabaseConnector.DatabaseConnector()
         self.log = logging.getLogger("TeamSpeakConnector")
         self.log.setLevel(logging.DEBUG)
         self.log_handler = logging.FileHandler("TeamSpeakConnector.log")

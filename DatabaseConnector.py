@@ -74,8 +74,10 @@ class DatabaseConnector():
             self.sql_edit('''CREATE TABLE privileged_server_groups(id INTEGER PRIMARY KEY AUTOINCREMENT, server_group TEXT UNIQUE)''')
         if not self.table_exists('lists'):
             self.sql_edit('''CREATE TABLE lists(id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT UNIQUE, channel_id INT UNIQUE, notifications BOOLEAN DEFAULT FALSE)''')
+        if not self.table_exists('list_guilds'):
+            self.sql_edit('''CREATE TABLE list_guilds(id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, list TEXT)''')
         if not self.table_exists('list_memberships'):
-            self.sql_edit('''CREATE TABLE list_memberships(id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, list TEXT, notified BOOLEAN)''')
+            self.sql_edit('''CREATE TABLE list_memberships(id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, list TEXT, notified BOOLEAN, from_guild BOOLEAN)''')
         if not self.table_exists('spawns'):
             self.sql_edit('''CREATE TABLE spawns(id INTEGER PRIMARY KEY AUTOINCREMENT, city TEXT, code TEXT UNIQUE, name TEXT, claimer TEXT, updated TIMESTAMP)''')
             self.fill_respawn_list()
@@ -246,8 +248,8 @@ class DatabaseConnector():
     def get_list_characters(self, list):
         return self.sql_get('''SELECT * FROM list_memberships WHERE list=?''', (list,))
 
-    def add_character_to_list(self, name, list):
-        return self.sql_edit('''INSERT INTO list_memberships(name, list) VALUES(?,?)''', (name,list,))
+    def add_character_to_list(self, name, list, from_guild=False):
+        return self.sql_edit('''INSERT INTO list_memberships(name, list, from_guild) VALUES(?,?,?)''', (name,list,from_guild,))
 
     def remove_character_from_list(self, name, list):
         return self.sql_edit('''DELETE FROM list_memberships WHERE name=? AND list=?''', (name, list,))
@@ -257,6 +259,13 @@ class DatabaseConnector():
 
     def add_list(self, name, channel_id):
         return self.sql_edit('''INSERT INTO lists(name, channel_id) VALUES(?,?)''', (name, channel_id,))
+
+    def set_list_guild(self, name, guild):
+        self.sql_edit('''INSERT INTO list_guilds(name, list) values(?,?)''', (name, guild,))
+        return self.sql_edit('''UPDATE lists SET guild = ? WHERE name = ?''', (guild, name,))
+
+    def get_list_guilds(self):
+        return self.sql_get('''SELECT * FROM list_guilds''')
 
     def server_groups_privileged(self, groups):
         for group in groups.split(','):
@@ -282,6 +291,15 @@ class DatabaseConnector():
     def add_entry(self, name, level, vocation, online):
         return self.sql_edit('''INSERT INTO characters(name, level, vocation, online, updated) VALUES(?, ?, ?, ?, ?)''', (name, level, vocation, online, datetime.datetime.now()))
 
+    def character_investigated(self, name):
+        if self.sql_count('''SELECT * FROM characters WHERE name=?''', (name,)) == 1:
+            return True
+        else:
+            return False
+
+    def update_list_member_set_guild_false(self, name):
+        return self.sql_edit('''UPDATE list_memberships SET from_guild = False WHERE name=(?)''', (name,))
+
     def find_entry_by_name(self, name):
         character = self.sql_get('''SELECT * FROM characters WHERE name=?''', (name,))[0]
         return {'name': character[1], 'level': character[2], 'vocation': character[3], 'online': character[4], 'updated': character[5]}
@@ -300,7 +318,7 @@ class DatabaseConnector():
         return self.sql_count('''SELECT * FROM list_memberships WHERE name=? AND notified=?''', (name,True,)) == 1
 
     def user_exists_by_name(self, name):
-        if self.sql_count('''SELECT * FROM characters WHERE name=?''', (name,)) == 1:
+        if self.sql_count('''SELECT * FROM list_memberships WHERE name LIKE ?''', (name,)) == 1:
             return True
         else:
             return False

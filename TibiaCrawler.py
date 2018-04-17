@@ -15,12 +15,36 @@ class TibiaCrawler(threading.Thread):
         self.world = config.get('settings', 'GAME_SERVER')
         self.tibiaServer = "https://secure.tibia.com/community/?subtopic=worlds&world=" + self.world
 
+    def get_guild_members(self, guild):
+        guild_url = "https://api.tibiadata.com/v2/guild/" + guild + ".json"
+        res = requests.get(guild_url)
+        while res.status_code != 200:
+            res = requests.get(guild_url)
+        content = json.loads(res.content.decode('utf-8'))
+        ranks = content['guild']['members']
+        member_list = []
+        for rank in ranks:
+            for member in rank['characters']:
+                member_list.append(member['name'])
+        return member_list
+
+    def add_new_guild_members(self, list, guild):
+        for member in self.get_guild_members(guild):
+            if not self.dbc.character_in_list(member, list):
+                self.dbc.add_character_to_list(member, list, True)
+
+    def check_and_remove_existing_guild_members(self, list, guild):
+        list_entries = self.get_guild_members(guild)
+        for member in self.dbc.get_list_characters(list):
+            if not member in list_entries:
+                self.dbc.remove_character_from_list(member, list)
+
     def shorten_vocation(self, long):
         return {
-            'Royal\xa0Paladin': 'RP',
-            'Elite\xa0Knight': 'EK',
-            'Master\xa0Sorcerer': 'MS',
-            'Elder\xa0Druid': 'ED',
+            'Royal Paladin': 'RP',
+            'Elite Knight': 'EK',
+            'Master Sorcerer': 'MS',
+            'Elder Druid': 'ED',
             'Paladin': 'RP',
             'Knight': 'EK',
             'Sorcerer': 'MS',
@@ -49,11 +73,13 @@ class TibiaCrawler(threading.Thread):
             online_list = []
             print("Key error getting online list, assuming server save: %s" % e)
 
-
         for character in online_list:
             if self.dbc.user_exists_by_name(character["name"]):
                 if not self.dbc.character_online(character["name"]):
-                    self.dbc.update_user_online_by_name(character["name"], character["level"])
+                    if not self.dbc.character_investigated(character["name"]):
+                        self.dbc.add_entry(character["name"], character["level"], self.shorten_vocation(character["vocation"]), True)
+                    else:
+                        self.dbc.update_user_online_by_name(character["name"], character["level"])
                 else:
                     self.dbc.add_entry(character["name"], character["level"], character["vocation"], True)
 
@@ -62,6 +88,10 @@ class TibiaCrawler(threading.Thread):
                 None
             else:
                 self.dbc.update_user_offline_by_name(db_online_character[1])
+
+        for db_list in self.dbc.get_list_guilds():
+            self.add_new_guild_members(db_list[1], db_list[2])
+            self.check_and_remove_existing_guild_members(db_list[1], db_list[2])
 
     def get_character(self, name):
         url = ''.join(["https://api.tibiadata.com/v2/character/", name, ".json"])
