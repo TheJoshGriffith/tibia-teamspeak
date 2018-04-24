@@ -21,11 +21,14 @@ class TibiaCrawler(threading.Thread):
         while res.status_code != 200:
             res = requests.get(guild_url)
         content = json.loads(res.content.decode('utf-8'))
-        ranks = content['guild']['members']
         member_list = []
-        for rank in ranks:
-            for member in rank['characters']:
-                member_list.append(member['name'])
+        try:
+            ranks = content['guild']['members']
+            for rank in ranks:
+                for member in rank['characters']:
+                    member_list.append(member['name'])
+        except KeyError as e:
+            print("Key error, should be able to continue now: %s" % e)
         return member_list
 
     def add_new_guild_members(self, list, guild):
