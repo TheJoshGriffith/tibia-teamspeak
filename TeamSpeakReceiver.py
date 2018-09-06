@@ -80,7 +80,7 @@ class TeamSpeakReceiver(threading.Thread):
                 else:
                     self.connector.message_client(self.connector.get_user_id_from_unique_id(invokeruid), "Added spawn")
         elif command == "!exclude":
-            if self.user_privileged(invokeruid, 'MAX'):
+            if self.user_privileged(invokeruid, 'MAXI'):
                 err = self.dbc.set_or_insert_setting("excluded_server_group", message)
                 if err:
                     self.log.error("Error excluding server group: " + str(err))
@@ -154,7 +154,7 @@ class TeamSpeakReceiver(threading.Thread):
                         self.connector.message_client(self.connector.get_user_id_from_unique_id(invokeruid), "Set alerts for channel successfully.")
             self.log.debug("Enable alerts for a given channel")
         elif command == "!setting":
-            if self.user_privileged(invokeruid, 'MAX'):
+            if self.user_privileged(invokeruid, 'MAXI'):
                 if message == "":
                     self.connector.message_client(self.connector.get_user_id_from_unique_id(invokeruid), "Use \"!setting [settingname] [newvalue]\" to set a configuration setting.")
                 else:
