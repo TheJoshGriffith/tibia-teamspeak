@@ -1,6 +1,6 @@
 import sqlite3
 import datetime
-import pprint
+
 
 class DatabaseConnector():
 
@@ -21,8 +21,6 @@ class DatabaseConnector():
             return e
         finally:
             db.close()
-        if cursor.rowcount == 0:
-            return "No rows affected"
         return False
 
     def sql_count(self, sql, kwargs=None):
@@ -71,7 +69,7 @@ class DatabaseConnector():
         if not self.table_exists('admins'):
             self.sql_edit('''CREATE TABLE admins(id INTEGER PRIMARY KEY AUTOINCREMENT, identity TEXT UNIQUE)''')
         if not self.table_exists('privileged_server_groups'):
-            self.sql_edit('''CREATE TABLE privileged_server_groups(id INTEGER PRIMARY KEY AUTOINCREMENT, server_group TEXT UNIQUE)''')
+            e = self.sql_edit('''CREATE TABLE privileged_server_groups(id INTEGER PRIMARY KEY AUTOINCREMENT, server_group TEXT UNIQUE, POKE bool, PUSH bool, KICK bool, LIST bool, SPAWN bool, MAXI bool)''')
         if not self.table_exists('lists'):
             self.sql_edit('''CREATE TABLE lists(id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT UNIQUE, channel_id INT UNIQUE, notifications BOOLEAN DEFAULT FALSE)''')
         if not self.table_exists('list_guilds'):
@@ -267,20 +265,18 @@ class DatabaseConnector():
     def get_list_guilds(self):
         return self.sql_get('''SELECT * FROM list_guilds''')
 
-    def server_groups_privileged(self, groups):
-        for group in groups.split(','):
-            if self.sql_count('''SELECT * FROM privileged_server_groups WHERE server_group=?''', (group,)) == 1:
-                return True
-        return False
+    def server_groups_privileged(self, groups, permission):
+        return self.sql_get('''SELECT ? FROM privileged_server_groups WHERE server_group = ?''', (permission,groups,))
 
     def is_admin(self, uid):
         return self.sql_count('''SELECT * FROM admins WHERE identity=?''', (uid,)) == 1
 
-    def is_privileged_user(self, server_group):
-        return self.sql_count('''SELECT * FROM privileged_server_groups WHERE servergroup=?''', (server_group,)) == 1
-
-    def insert_privileged_server_group(self, group):
-        return self.sql_edit('''INSERT INTO privileged_server_groups(server_group) VALUES(?)''', (group,))
+    def insert_privileged_server_group(self, group, level):
+        count = self.sql_count('''SELECT * FROM privileged_server_groups WHERE server_group = ?''', (group,))
+        if count == 0:
+            return self.sql_edit('''INSERT INTO privileged_server_groups(server_group, POKE, PUSH, KICK, LIST, SPAWN, MAXI) VALUES(?, ?, ?, ?, ?, ?, ?)''', (group, int(level) > 0, int(level) > 1, int(level) > 2, int(level) > 3, int(level) > 4, int(level) > 5,))
+        else:
+            return self.sql_edit('''UPDATE privileged_server_groups SET POKE=?, PUSH=?, KICK=?, LIST=?, SPAWN=?, MAXI=? WHERE server_group = ?''', (int(level) > 0, int(level) > 1, int(level) > 2, int(level) > 3, int(level) > 4, int(level) > 5, group,))
 
     def count_admins(self):
         return self.sql_count('''SELECT * FROM admins''')

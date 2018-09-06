@@ -53,9 +53,9 @@ class TeamSpeakReceiver(threading.Thread):
         res = self.ts3conn.sendtextmessage(targetmode=1, target=clid, msg=message)
         self.log.debug(res)
 
-    def user_privileged(self, uid):
+    def user_privileged(self, uid, permission):
         server_groups = self.connector.get_server_groups_uid(uid)
-        if self.dbc.is_admin(uid) or self.dbc.server_groups_privileged(server_groups):
+        if self.dbc.is_admin(uid) or self.dbc.server_groups_privileged(server_groups, permission):
             self.log.debug("Privileged servergroup: " + str(server_groups))
             return True
         else:
@@ -67,7 +67,7 @@ class TeamSpeakReceiver(threading.Thread):
         if command == "!help":
             self.connector.message_client(self.connector.get_user_id_from_unique_id(invokeruid), "Commands available:\n!masspoke\n!sg\n!addlist\n!removelist\n!channellist\n!alert\n!respawnlistchannel\n!claimedrespawnchannel")
         elif command == "!masspoke":
-            if self.user_privileged(invokeruid):
+            if self.user_privileged(invokeruid, 'POKE'):
                 self.connector.masspoke(message, invokeruid)
         elif command == "!addspawn":
             if message == "":
@@ -80,7 +80,7 @@ class TeamSpeakReceiver(threading.Thread):
                 else:
                     self.connector.message_client(self.connector.get_user_id_from_unique_id(invokeruid), "Added spawn")
         elif command == "!exclude":
-            if self.user_privileged(invokeruid):
+            if self.user_privileged(invokeruid, 'MAX'):
                 err = self.dbc.set_or_insert_setting("excluded_server_group", message)
                 if err:
                     self.log.error("Error excluding server group: " + str(err))
@@ -96,14 +96,13 @@ class TeamSpeakReceiver(threading.Thread):
                 self.dbc.add_admin(invokeruid)
                 self.log.debug("Given admin permissions to " + str(invokeruid))
         elif command == "!sg":
-            groups = message.split(' ')
-            for group in groups:
-                self.dbc.insert_privileged_server_group(group)
-                self.connector.message_client(self.connector.get_user_id_from_unique_id(invokeruid), "Added server group to permissions table")
-                self.log.debug("Added " + str(group) + " server group to privilege table")
+            group, level = message.split(',')
+            self.dbc.insert_privileged_server_group(group, level)
+            self.connector.message_client(self.connector.get_user_id_from_unique_id(invokeruid), "Added server group to permissions table")
+            self.log.debug("Added " + str(group) + " server group to privilege table with level " + str(level))
             self.log.debug("Add server group to privilege table")
         elif command == "!addlist":
-            if self.user_privileged(invokeruid):
+            if self.user_privileged(invokeruid, 'LIST'):
                 if message == "":
                     self.connector.message_client(self.connector.get_user_id_from_unique_id(invokeruid), "Use \"!addlist [name] [channelid]\" to add a list. You can view channels with !channellist. List name should contain 1 word without spaces.")
                 else:
@@ -115,7 +114,7 @@ class TeamSpeakReceiver(threading.Thread):
                         self.connector.message_client(self.connector.get_user_id_from_unique_id(invokeruid), "List added.")
             self.log.debug("Add a list to the character tracker")
         elif command == "!removelist":
-            if self.user_privileged(invokeruid):
+            if self.user_privileged(invokeruid, 'LIST'):
                 if message == "":
                     self.connector.message_client(self.connector.get_user_id_from_unique_id(invokeruid), "Use \"!remove [name]\" to remove a list.")
                 else:
@@ -131,7 +130,7 @@ class TeamSpeakReceiver(threading.Thread):
                         self.connector.message_client(self.connector.get_user_id_from_unique_id(invokeruid), "List added.")
             self.log.debug("Remove a list from the character tracker")
         elif command == "!channellist":
-            if self.user_privileged(invokeruid):
+            if self.user_privileged(invokeruid, 'LIST'):
                 channel_message = ""
                 for channel in self.connector.get_channel_list_string():
                     channel_message += channel + ", "
@@ -143,7 +142,7 @@ class TeamSpeakReceiver(threading.Thread):
                 self.connector.message_client(self.connector.get_user_id_from_unique_id(invokeruid), "Insufficient permissions to list channels")
             self.log.debug("Send client a list of channels")
         elif command == "!alert":
-            if self.user_privileged(invokeruid):
+            if self.user_privileged(invokeruid, 'LIST'):
                 if message == "":
                     self.connector.message_client(self.connector.get_user_id_from_unique_id(invokeruid), "Use \"!alert [list] [on/off]\" to enable or disable poke notifications for a list.")
                 else:
@@ -155,7 +154,7 @@ class TeamSpeakReceiver(threading.Thread):
                         self.connector.message_client(self.connector.get_user_id_from_unique_id(invokeruid), "Set alerts for channel successfully.")
             self.log.debug("Enable alerts for a given channel")
         elif command == "!setting":
-            if self.user_privileged(invokeruid):
+            if self.user_privileged(invokeruid, 'MAX'):
                 if message == "":
                     self.connector.message_client(self.connector.get_user_id_from_unique_id(invokeruid), "Use \"!setting [settingname] [newvalue]\" to set a configuration setting.")
                 else:
@@ -166,7 +165,7 @@ class TeamSpeakReceiver(threading.Thread):
                     else:
                         self.connector.message_client(self.connector.get_user_id_from_unique_id(invokeruid), "Set setting successfully.")
         elif command == "!respawnlistchannel":
-            if self.user_privileged(invokeruid):
+            if self.user_privileged(invokeruid, 'SPAWN'):
                 if message == "":
                     self.connector.message_client(self.connector.get_user_id_from_unique_id(invokeruid), "Use \"!respawnlist [channel_id]\" to set a channel for the respawn list.")
                 else:
@@ -176,7 +175,7 @@ class TeamSpeakReceiver(threading.Thread):
                     else:
                         self.connector.message_client(self.connector.get_user_id_from_unique_id(invokeruid), "Set setting successfully.")
         elif command == "!claimedrespawnchannel":
-            if self.user_privileged(invokeruid):
+            if self.user_privileged(invokeruid, 'SPAWN'):
                 if message == "":
                     self.connector.message_client(self.connector.get_user_id_from_unique_id(invokeruid), "Use \"!respawnclaim [channel_id]\" to set a channel for the claimed respawn list.")
                 else:
@@ -188,7 +187,7 @@ class TeamSpeakReceiver(threading.Thread):
         else:
             for list in self.dbc.get_lists():
                 if command.lower() == "!" + list[1]:
-                    if self.user_privileged(invokeruid):
+                    if self.user_privileged(invokeruid, 'LIST'):
                         method, space, character = message.partition(' ')
                         if method == "add":
                             self.dbc.add_character_to_list(character, list[1])
